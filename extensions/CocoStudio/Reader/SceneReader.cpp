@@ -22,27 +22,27 @@
  THE SOFTWARE.
  ****************************************************************************/
 
-#include "CCSSceneReader.h"
+#include "SceneReader.h"
 #include "cocos-ext.h"
 
 NS_CC_EXT_BEGIN
 
-	CCSSceneReader* CCSSceneReader::s_sharedReader = NULL;
+	SceneReader* SceneReader::s_sharedReader = NULL;
 
-    CCSSceneReader::CCSSceneReader()
+    SceneReader::SceneReader()
     {
 	}
 
-    CCSSceneReader::~CCSSceneReader()
+    SceneReader::~SceneReader()
     {
     }
 
-	const char* CCSSceneReader::sceneReaderVersion()
+	const char* SceneReader::sceneReaderVersion()
 	{
 		return "1.0.0.0";
 	}
 
-    cocos2d::CCNode* CCSSceneReader::createNodeWithSceneFile(const char* pszFileName)
+    cocos2d::CCNode* SceneReader::createNodeWithSceneFile(const char* pszFileName)
     {
         unsigned long size = 0;
         const char* pData = 0;
@@ -61,7 +61,7 @@ NS_CC_EXT_BEGIN
         return pNode;
 	}
 
-	CCNode* CCSSceneReader::createObject(cs::CSJsonDictionary * inputFiles, CCNode* parenet)
+	CCNode* SceneReader::createObject(cs::CSJsonDictionary * inputFiles, CCNode* parenet)
     {
         const char *className = inputFiles->getItemStringValue("classname"); 
         if(strcmp(className, "CCNode") == 0)
@@ -327,7 +327,7 @@ NS_CC_EXT_BEGIN
 				{
 					cocos2d::extension::UILayer *pLayer = cocos2d::extension::UILayer::create();
                     pLayer->scheduleUpdate();
-					UIWidget* widget=cocos2d::extension::UIHelper::instance()->createWidgetFromJsonFile(pPath.c_str());
+                    UIWidget* widget = cocos2d::extension::GUIReader::shareReader()->widgetFromJsonFile(pPath.c_str());
 					pLayer->addWidget(widget);
 					CCComRender *pRender = CCComRender::create(pLayer, "GUIComponent");
 					if (pComName != NULL)
@@ -358,7 +358,7 @@ NS_CC_EXT_BEGIN
     }
 
 
-    void CCSSceneReader::setPropertyFromJsonDict(cocos2d::CCNode *node, cs::CSJsonDictionary* dict)
+    void SceneReader::setPropertyFromJsonDict(cocos2d::CCNode *node, cs::CSJsonDictionary* dict)
     {
 		int x = dict->getItemIntValue("x", 0);
 		int y = dict->getItemIntValue("y", 0);
@@ -382,16 +382,16 @@ NS_CC_EXT_BEGIN
         node->setRotation(fRotationZ);
     }
 
-	CCSSceneReader* CCSSceneReader::sharedSceneReader()
+	SceneReader* SceneReader::sharedSceneReader()
 	{
 		if (s_sharedReader == NULL)
 		{
-			s_sharedReader = new CCSSceneReader();
+			s_sharedReader = new SceneReader();
 		}
 		return s_sharedReader;
 	}
 
-    void CCSSceneReader::purgeSceneReader()
+    void SceneReader::purgeSceneReader()
     {
 		CC_SAFE_DELETE(s_sharedReader);
 		cocos2d::extension::DictionaryHelper::shareHelper()->purgeDictionaryHelper();
