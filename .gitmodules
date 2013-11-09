@@ -19,3 +19,6 @@
 [submodule "cocos2dx/platform/third_party/winrt/angleproject"]
 	path = cocos2dx/platform/third_party/winrt/angleproject
 	url = https://github.com/stammen/angleproject
+[submodule "Resource-Compiler"]
+	path = Resource-Compiler
+	url = https://github.com/seagullua/Resource-Compiler.git
