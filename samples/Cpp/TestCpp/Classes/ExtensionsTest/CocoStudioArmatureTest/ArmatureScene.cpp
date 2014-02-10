@@ -1,7 +1,6 @@
 #include "ArmatureScene.h"
 #include "../../testResource.h"
 
-
 using namespace cocos2d;
 using namespace cocos2d::extension;
 
@@ -20,6 +19,9 @@ CCLayer *CreateLayer(int index)
     case TEST_ASYNCHRONOUS_LOADING:
         pLayer = new TestAsynchronousLoading();
         break;
+    case TEST_DIRECT_LOADING:
+        pLayer = new TestDirectLoading();
+        break;
     case TEST_DRAGON_BONES_2_0:
         pLayer = new TestDragonBones20();
         break;
@@ -29,11 +31,17 @@ CCLayer *CreateLayer(int index)
     case TEST_PERFORMANCE:
         pLayer = new TestPerformance();
         break;
+    case TEST_PERFORMANCE_BATCHNODE:
+        pLayer = new TestPerformanceBatchNode();
+        break;
     case TEST_CHANGE_ZORDER:
         pLayer = new TestChangeZorder();
         break;
     case TEST_ANIMATION_EVENT:
         pLayer = new TestAnimationEvent();
+        break;
+    case TEST_FRAME_EVENT:
+        pLayer = new TestFrameEvent();
         break;
     case  TEST_PARTICLE_DISPLAY:
         pLayer = new TestParticleDisplay();
@@ -41,7 +49,7 @@ CCLayer *CreateLayer(int index)
     case TEST_USE_DIFFERENT_PICTURE:
         pLayer = new TestUseMutiplePicture();
         break;
-    case TEST_BCOLLIDER_DETECTOR:
+    case TEST_COLLIDER_DETECTOR:
         pLayer = new TestColliderDetector();
         break;
     case TEST_BOUDINGBOX:
@@ -55,6 +63,15 @@ CCLayer *CreateLayer(int index)
         break;
     case TEST_ARMATURE_NESTING_2:
         pLayer = new TestArmatureNesting2();
+        break;
+    case TEST_PLAY_SEVERAL_MOVEMENT:
+        pLayer = new TestPlaySeveralMovement();
+        break;
+    case TEST_EASING:
+        pLayer = new TestEasing();
+        break;
+    case TEST_CHANGE_ANIMATION_INTERNAL:
+        pLayer = new TestChangeAnimationInternal();
         break;
     default:
         break;
@@ -236,16 +253,8 @@ void TestAsynchronousLoading::onEnter()
     CCArmatureDataManager::sharedArmatureDataManager()->addArmatureFileInfoAsync("armature/hero.ExportJson", this, schedule_selector(TestAsynchronousLoading::dataLoaded));
     CCArmatureDataManager::sharedArmatureDataManager()->addArmatureFileInfoAsync("armature/horse.ExportJson", this, schedule_selector(TestAsynchronousLoading::dataLoaded));
     CCArmatureDataManager::sharedArmatureDataManager()->addArmatureFileInfoAsync("armature/bear.ExportJson", this, schedule_selector(TestAsynchronousLoading::dataLoaded));
-
-
-    //! load data directly
-    // 	CCArmatureDataManager::sharedArmatureDataManager()->addArmatureFileInfo("armature/knight.png", "armature/knight.plist", "armature/knight.xml");
-    // 	CCArmatureDataManager::sharedArmatureDataManager()->addArmatureFileInfo("armature/weapon.png", "armature/weapon.plist", "armature/weapon.xml");
-    // 	CCArmatureDataManager::sharedArmatureDataManager()->addArmatureFileInfo("armature/robot.png", "armature/robot.plist", "armature/robot.xml");
-    // 	CCArmatureDataManager::sharedArmatureDataManager()->addArmatureFileInfo("armature/cyborg.png", "armature/cyborg.plist", "armature/cyborg.xml");
-    // 	CCArmatureDataManager::sharedArmatureDataManager()->addArmatureFileInfo("armature/Dragon.png", "armature/Dragon.plist", "armature/Dragon.xml");
-    //	CCArmatureDataManager::sharedArmatureDataManager()->addArmatureFileInfo("armature/Cowboy.ExportJson");
-
+    CCArmatureDataManager::sharedArmatureDataManager()->addArmatureFileInfoAsync("armature/HeroAnimation.ExportJson", this, schedule_selector(TestAsynchronousLoading::dataLoaded));
+    CCArmatureDataManager::sharedArmatureDataManager()->addArmatureFileInfoAsync("armature/testEasing.ExportJson", this, schedule_selector(TestAsynchronousLoading::dataLoaded));
 }
 
 std::string TestAsynchronousLoading::title()
@@ -255,6 +264,11 @@ std::string TestAsynchronousLoading::title()
 std::string TestAsynchronousLoading::subtitle()
 {
     return "current percent : ";
+}
+void TestAsynchronousLoading::restartCallback(CCObject* pSender)
+{
+    CCArmatureDataManager::sharedArmatureDataManager()->purge();
+    ArmatureTestLayer::restartCallback(pSender);
 }
 void TestAsynchronousLoading::dataLoaded(float percent)
 {
@@ -275,13 +289,34 @@ void TestAsynchronousLoading::dataLoaded(float percent)
 }
 
 
+void TestDirectLoading::onEnter()
+{
+    ArmatureTestLayer::onEnter();
+
+    // remove sigle resource
+    CCArmatureDataManager::sharedArmatureDataManager()->removeArmatureFileInfo("armature/bear.ExportJson");
+
+    // load resource directly
+    CCArmatureDataManager::sharedArmatureDataManager()->addArmatureFileInfo("armature/bear.ExportJson");
+
+    CCArmature *armature = CCArmature::create("bear");
+    armature->getAnimation()->playWithIndex(0);
+    armature->setPosition(ccp(VisibleRect::center().x, VisibleRect::center().y));
+    addChild(armature);
+}
+std::string TestDirectLoading::title()
+{
+    return "Test Direct Loading";
+}
+
+
 
 void TestCSWithSkeleton::onEnter()
 {
     ArmatureTestLayer::onEnter();
     cocos2d::extension::CCArmature *armature = NULL;
     armature = cocos2d::extension::CCArmature::create("Cowboy");
-    armature->getAnimation()->playByIndex(0);
+    armature->getAnimation()->playWithIndex(0);
     armature->setScale(0.2f);
 
     armature->setPosition(ccp(VisibleRect::center().x, VisibleRect::center().y/*-100*/));
@@ -302,7 +337,7 @@ void TestDragonBones20::onEnter()
 
     cocos2d::extension::CCArmature *armature = NULL;
     armature = cocos2d::extension::CCArmature::create("Dragon");
-    armature->getAnimation()->playByIndex(1);
+    armature->getAnimation()->playWithIndex(1);
     armature->getAnimation()->setSpeedScale(0.4f);
     armature->setPosition(VisibleRect::center().x, VisibleRect::center().y * 0.3f);
     armature->setScale(0.6f);
@@ -316,6 +351,9 @@ std::string TestDragonBones20::title()
 
 
 
+#define ArmaturePerformanceTag 20000
+
+
 TestPerformance::~TestPerformance()
 {
 }
@@ -323,10 +361,23 @@ void TestPerformance::onEnter()
 {
     ArmatureTestLayer::onEnter();
 
+    CCMenuItemFont::setFontSize(65);
+    CCMenuItemFont *decrease = CCMenuItemFont::create(" - ", this, menu_selector(TestPerformance::onDecrease));
+    decrease->setColor(ccc3(0,200,20));
+    CCMenuItemFont *increase = CCMenuItemFont::create(" + ", this, menu_selector(TestPerformance::onIncrease));
+    increase->setColor(ccc3(0,200,20));
+
+    CCMenu *menu = CCMenu::create(decrease, increase, NULL);
+    menu->alignItemsHorizontally();
+    menu->setPosition(ccp(VisibleRect::getVisibleRect().size.width/2, VisibleRect::getVisibleRect().size.height-100));
+    addChild(menu, 10000);
+
     armatureCount = frames = times = lastTimes = 0;
     generated = false;
 
     scheduleUpdate();
+
+    addArmature(100);
 }
 
 std::string TestPerformance::title()
@@ -337,35 +388,76 @@ std::string TestPerformance::subtitle()
 {
     return "Current CCArmature Count : ";
 }
-void TestPerformance::addArmature(cocos2d::extension::CCArmature *armature)
+void TestPerformance::onIncrease(CCObject* pSender)
 {
-    armatureCount++;
-    addChild(armature, armatureCount);
+    addArmature(20);
 }
-void TestPerformance::update(float delta)
+void TestPerformance::onDecrease(CCObject* pSender)
 {
-    frames ++;
-    times += delta;
+    if (armatureCount == 0)
+        return;
 
-    if (frames / times > 58)
+    for (int i = 0; i<20; i++)
     {
+        removeArmatureFromParent(ArmaturePerformanceTag + armatureCount);
+        armatureCount --;
+        refreshTitile();
+    }
+}
+void TestPerformance::addArmature(int number)
+{
+    for (int i = 0; i<number; i++)
+    {
+        armatureCount++;
+
         cocos2d::extension::CCArmature *armature = NULL;
         armature = new cocos2d::extension::CCArmature();
         armature->init("Knight_f/Knight");
-        armature->getAnimation()->playByIndex(0);
+        armature->getAnimation()->playWithIndex(0);
         armature->setPosition(50 + armatureCount * 2, 150);
         armature->setScale(0.6f);
-        addArmature(armature);
+        addArmatureToParent(armature);
         armature->release();
-
-        char pszCount[255];
-        sprintf(pszCount, "%s %i", subtitle().c_str(), armatureCount);
-        CCLabelTTF *label = (CCLabelTTF *)getChildByTag(10001);
-        label->setString(pszCount);
     }
+
+    refreshTitile();
+}
+void TestPerformance::addArmatureToParent(cocos2d::extension::CCArmature *armature)
+{
+    addChild(armature, 0, ArmaturePerformanceTag + armatureCount);
+}
+void TestPerformance::removeArmatureFromParent(int tag)
+{
+    removeChildByTag(ArmaturePerformanceTag + armatureCount);
+}
+void TestPerformance::refreshTitile()
+{
+    char pszCount[255];
+    sprintf(pszCount, "%s %i", subtitle().c_str(), armatureCount);
+    CCLabelTTF *label = (CCLabelTTF *)getChildByTag(10001);
+    label->setString(pszCount);
 }
 
 
+void TestPerformanceBatchNode::onEnter()
+{
+    batchNode = CCBatchNode::create();
+    addChild(batchNode);
+
+    TestPerformance::onEnter();
+}
+std::string TestPerformanceBatchNode::title()
+{
+    return "Test Performance of using CCBatchNode";
+}
+void TestPerformanceBatchNode::addArmatureToParent(cocos2d::extension::CCArmature *armature)
+{
+    batchNode->addChild(armature, 0, ArmaturePerformanceTag + armatureCount);
+}
+void TestPerformanceBatchNode::removeArmatureFromParent(int tag)
+{
+    batchNode->removeChildByTag(ArmaturePerformanceTag + armatureCount);
+}
 
 
 
@@ -378,21 +470,21 @@ void TestChangeZorder::onEnter()
     currentTag = -1;
 
     armature = cocos2d::extension::CCArmature::create("Knight_f/Knight");
-    armature->getAnimation()->playByIndex(0);
+    armature->getAnimation()->playWithIndex(0);
     armature->setPosition(ccp(VisibleRect::center().x, VisibleRect::center().y - 100));
     ++currentTag;
     armature->setScale(0.6f);
     addChild(armature, currentTag, currentTag);
 
     armature = cocos2d::extension::CCArmature::create("Cowboy");
-    armature->getAnimation()->playByIndex(0);
+    armature->getAnimation()->playWithIndex(0);
     armature->setScale(0.24f);
     armature->setPosition(ccp(VisibleRect::center().x, VisibleRect::center().y - 100));
     ++currentTag;
     addChild(armature, currentTag, currentTag);
 
     armature = cocos2d::extension::CCArmature::create("Dragon");
-    armature->getAnimation()->playByIndex(0);
+    armature->getAnimation()->playWithIndex(0);
     armature->setPosition(ccp(VisibleRect::center().x , VisibleRect::center().y - 100));
     ++currentTag;
     armature->setScale(0.6f);
@@ -475,6 +567,50 @@ void TestAnimationEvent::callback2()
 
 
 
+#define  FRAME_EVENT_ACTION_TAG 10000
+
+void TestFrameEvent::onEnter()
+{
+    ArmatureTestLayer::onEnter();
+    cocos2d::extension::CCArmature *armature = cocos2d::extension::CCArmature::create("HeroAnimation");
+    armature->getAnimation()->play("attack");
+    armature->getAnimation()->setSpeedScale(0.5);
+    armature->setPosition(ccp(VisibleRect::center().x - 50, VisibleRect::center().y -100));
+
+    /*
+     * Set armature's frame event callback function
+     * To disconnect this event, just setFrameEventCallFunc(NULL, NULL);
+     */
+    armature->getAnimation()->setFrameEventCallFunc(this, frameEvent_selector(TestFrameEvent::onFrameEvent));
+
+    addChild(armature);
+
+    schedule( schedule_selector(TestFrameEvent::checkAction) );
+}
+std::string TestFrameEvent::title()
+{
+    return "Test Frame Event";
+}
+void TestFrameEvent::onFrameEvent(cocos2d::extension::CCBone *bone, const char *evt, int originFrameIndex, int currentFrameIndex)
+{
+    CCLOG("(%s) emit a frame event (%s) at frame index (%d).", bone->getName().c_str(), evt, currentFrameIndex);
+
+
+    if (!this->getActionByTag(FRAME_EVENT_ACTION_TAG) || this->getActionByTag(FRAME_EVENT_ACTION_TAG)->isDone())
+    {
+        this->stopAllActions();
+
+        CCActionInterval *action =  CCShatteredTiles3D::create(0.2f, CCSizeMake(16,12), 5, false); 
+        action->setTag(FRAME_EVENT_ACTION_TAG);
+        this->runAction(action);
+    }
+}
+void TestFrameEvent::checkAction(float dt)
+{
+    if ( this->numberOfRunningActions() == 0 && this->getGrid() != NULL)
+        this->setGrid(NULL);
+}
+
 
 void TestParticleDisplay::onEnter()
 {
@@ -484,7 +620,7 @@ void TestParticleDisplay::onEnter()
     animationID = 0;
 
     armature = cocos2d::extension::CCArmature::create("robot");
-    armature->getAnimation()->playByIndex(0);
+    armature->getAnimation()->playWithIndex(0);
     armature->setPosition(VisibleRect::center());
     armature->setScale(0.48f);
     armature->getAnimation()->setSpeedScale(0.5f);
@@ -496,7 +632,7 @@ void TestParticleDisplay::onEnter()
 
     cocos2d::extension::CCBone *bone  = cocos2d::extension::CCBone::create("p1");
     bone->addDisplay(p1, 0);
-    bone->changeDisplayByIndex(0, true);
+    bone->changeDisplayWithIndex(0, true);
     bone->setIgnoreMovementBoneData(true);
     bone->setZOrder(100);
     bone->setScale(1.2f);
@@ -504,7 +640,7 @@ void TestParticleDisplay::onEnter()
 
     bone  = cocos2d::extension::CCBone::create("p2");
     bone->addDisplay(p2, 0);
-    bone->changeDisplayByIndex(0, true);
+    bone->changeDisplayWithIndex(0, true);
     bone->setIgnoreMovementBoneData(true);
     bone->setZOrder(100);
     bone->setScale(1.2f);
@@ -527,7 +663,7 @@ bool TestParticleDisplay::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
 {
     ++animationID;
     animationID = animationID % armature->getAnimation()->getMovementCount();
-    armature->getAnimation()->playByIndex(animationID);
+    armature->getAnimation()->playWithIndex(animationID);
     return false;
 }
 
@@ -547,7 +683,7 @@ void TestUseMutiplePicture::onEnter()
     displayIndex = 0;
 
     armature = cocos2d::extension::CCArmature::create("Knight_f/Knight");
-    armature->getAnimation()->playByIndex(0);
+    armature->getAnimation()->playWithIndex(0);
     armature->setPosition(ccp(VisibleRect::center().x, VisibleRect::left().y));
     armature->setScale(1.2f);
     addChild(armature);
@@ -588,7 +724,7 @@ bool TestUseMutiplePicture::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
 {
     ++displayIndex;
     displayIndex = (displayIndex) % 8;
-    armature->getBone("weapon")->changeDisplayByIndex(displayIndex, true);
+    armature->getBone("weapon")->changeDisplayWithIndex(displayIndex, true);
     return false;
 }
 void TestUseMutiplePicture::registerWithTouchDispatcher()
@@ -631,7 +767,11 @@ void TestColliderDetector::onEnter()
     armature2->setPosition(ccp(VisibleRect::right().x - 60, VisibleRect::left().y));
     addChild(armature2);
 
+#if ENABLE_PHYSICS_BOX2D_DETECT || ENABLE_PHYSICS_CHIPMUNK_DETECT
     bullet = CCPhysicsSprite::createWithSpriteFrameName("25.png");
+#elif ENABLE_PHYSICS_SAVE_CALCULATED_VERTEX
+    bullet = CCSprite::createWithSpriteFrameName("25.png");
+#endif
     addChild(bullet);
 
     initWorld();
@@ -870,20 +1010,69 @@ void TestColliderDetector::initWorld()
 
     bullet->setCPBody(body);
 
-    body = cpBodyNew(INFINITY, INFINITY);
+    body = cpBodyNew(1.0f, INFINITY);
     cpSpaceAddBody(space, body);
     armature2->setBody(body);
 
-    shape = armature2->getShapeList();
-    while(shape)
-    {
-        cpShape *next = shape->next_private;
-        shape->collision_type = eEnemyTag;
-        shape = next;
-    }
+    CCColliderFilter filter = CCColliderFilter(eEnemyTag);
+    armature2->setColliderFilter(&filter);
 
     cpSpaceAddCollisionHandler(space, eEnemyTag, eBulletTag, beginHit, NULL, NULL, endHit, NULL);
 }
+#elif ENABLE_PHYSICS_SAVE_CALCULATED_VERTEX
+void TestColliderDetector::update(float delta)
+{
+    armature2->setVisible(true);
+
+    CCRect rect = bullet->boundingBox();
+
+    // This code is just telling how to get the vertex.
+    // For a more accurate collider detection, you need to implemente yourself.
+    CCDictElement *element = NULL;
+    CCDictionary *dict = armature2->getBoneDic();
+    CCDICT_FOREACH(dict, element)
+    {
+        CCBone *bone = static_cast<CCBone*>(element->getObject());
+        CCArray *bodyList = bone->getColliderBodyList();
+
+        CCObject *object = NULL;
+        CCARRAY_FOREACH(bodyList, object)
+        {
+            ColliderBody *body = static_cast<ColliderBody*>(object);
+            CCArray *vertexList = body->getCalculatedVertexList();
+
+            float minx, miny, maxx, maxy = 0;
+            int length = vertexList->count();
+            for (int i = 0; i<length; i++)
+            {
+                CCContourVertex2 *vertex = static_cast<CCContourVertex2*>(vertexList->objectAtIndex(i));
+                if (i == 0)
+                {
+                  minx = maxx = vertex->x;
+                  miny = maxy = vertex->y;
+                }
+                else
+                {
+                    minx = vertex->x < minx ? vertex->x : minx;
+                    miny = vertex->y < miny ? vertex->y : miny;
+                    maxx = vertex->x > maxx ? vertex->x : maxx;
+                    maxy = vertex->y > maxy ? vertex->y : maxy;
+                }
+            }
+            CCRect temp = CCRectMake(minx, miny, maxx - minx, maxy - miny);
+
+            if (temp.intersectsRect(rect))
+            {
+                armature2->setVisible(false);
+            }
+        }
+    }
+}
+void TestColliderDetector::draw()
+{
+    armature2->drawContour();
+}
+
 #endif
 
 
@@ -895,7 +1084,7 @@ void TestBoundingBox::onEnter()
     ArmatureTestLayer::onEnter();
 
     armature = cocos2d::extension::CCArmature::create("Cowboy");
-    armature->getAnimation()->playByIndex(0);
+    armature->getAnimation()->playWithIndex(0);
     armature->setPosition(VisibleRect::center());
     armature->setScale(0.2f);
     addChild(armature);
@@ -911,7 +1100,7 @@ void TestBoundingBox::draw()
 {
     CC_NODE_DRAW_SETUP();
 
-    rect = CCRectApplyAffineTransform(armature->boundingBox(), armature->nodeToParentTransform());
+    rect = armature->boundingBox();
 
     ccDrawColor4B(100, 100, 100, 255);
     ccDrawRect(rect.origin, ccp(rect.getMaxX(), rect.getMaxY()));
@@ -926,7 +1115,7 @@ void TestAnchorPoint::onEnter()
     for (int i = 0; i < 5; i++)
     {
         cocos2d::extension::CCArmature *armature = cocos2d::extension::CCArmature::create("Cowboy");
-        armature->getAnimation()->playByIndex(0);
+        armature->getAnimation()->playWithIndex(0);
         armature->setPosition(VisibleRect::center());
         armature->setScale(0.2f);
         addChild(armature, 0, i);
@@ -951,7 +1140,7 @@ void TestArmatureNesting::onEnter()
     setTouchEnabled(true);
 
     armature = cocos2d::extension::CCArmature::create("cyborg");
-    armature->getAnimation()->playByIndex(1);
+    armature->getAnimation()->playWithIndex(1);
     armature->setPosition(VisibleRect::center());
     armature->setScale(1.2f);
     armature->getAnimation()->setSpeedScale(0.4f);
@@ -975,8 +1164,8 @@ bool TestArmatureNesting::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
 
     if(armature != NULL)
     {
-        armature->getBone("armInside")->getChildArmature()->getAnimation()->playByIndex(weaponIndex);
-        armature->getBone("armOutside")->getChildArmature()->getAnimation()->playByIndex(weaponIndex);
+        armature->getBone("armInside")->getChildArmature()->getAnimation()->playWithIndex(weaponIndex);
+        armature->getBone("armOutside")->getChildArmature()->getAnimation()->playWithIndex(weaponIndex);
     }
 
     return false;
@@ -1013,7 +1202,7 @@ void Hero::changeMount(CCArmature *armature)
     {
         retain();
 
-        playByIndex(0);
+        playWithIndex(0);
         //Remove hero from display list
         m_pMount->getBone("hero")->removeDisplay(0);
         m_pMount->stopAllActions();
@@ -1040,12 +1229,12 @@ void Hero::changeMount(CCArmature *armature)
         //Add hero as a display to this bone
         bone->addDisplay(this, 0);
         //Change this bone's display
-        bone->changeDisplayByIndex(0, true);
+        bone->changeDisplayWithIndex(0, true);
         bone->setIgnoreMovementBoneData(true);
 
         setPosition(ccp(0,0));
         //Change animation
-        playByIndex(1);
+        playWithIndex(1);
 
         setScale(1);
 
@@ -1054,12 +1243,12 @@ void Hero::changeMount(CCArmature *armature)
 
 }
 
-void Hero::playByIndex(int index)
+void Hero::playWithIndex(int index)
 {
-    m_pAnimation->playByIndex(index);
+    m_pAnimation->playWithIndex(index);
     if (m_pMount)
     {
-        m_pMount->getAnimation()->playByIndex(index);
+        m_pMount->getAnimation()->playWithIndex(index);
     }
 }
 
@@ -1083,7 +1272,7 @@ void TestArmatureNesting2::onEnter()
     //Create a hero
     hero = Hero::create("hero");
     hero->setLayer(this);
-    hero->playByIndex(0);
+    hero->playWithIndex(0);
     hero->setPosition(ccp(VisibleRect::left().x + 20, VisibleRect::left().y));
     addChild(hero);
 
@@ -1163,10 +1352,138 @@ void TestArmatureNesting2::ChangeMountCallback(CCObject* pSender)
 CCArmature * TestArmatureNesting2::createMount(const char *name, CCPoint position)
 {
     CCArmature *armature = CCArmature::create(name);
-    armature->getAnimation()->playByIndex(0);
+    armature->getAnimation()->playWithIndex(0);
     armature->setPosition(position);
     addChild(armature);
 
     return armature;
+}
+
+void TestPlaySeveralMovement::onEnter()
+{
+    ArmatureTestLayer::onEnter();
+
+    // To use names, you could create a std::vector like this.  
+    // std::string name[] = {"Walk", "FireMax", "Fire"};
+    // std::vector<std::string> names(name, name+3);
+    // armature->getAnimation()->playWithNames(names);
+
+    int index[] = {0, 1, 2};
+    std::vector<int> indexes(index, index+3);
+
+    CCArmature *armature = CCArmature::create("Cowboy");
+    
+    armature->getAnimation()->playWithIndexes(indexes);
+    armature->setScale(0.2f);
+
+    armature->setPosition(ccp(VisibleRect::center().x, VisibleRect::center().y/*-100*/));
+    addChild(armature);
+}
+std::string TestPlaySeveralMovement::title()
+{
+    return "Test play several movement";
+}
+
+std::string TestPlaySeveralMovement::subtitle()
+{
+    return "Movement is played one by one";
+}
+
+
+void TestEasing::onEnter()
+{
+    ArmatureTestLayer::onEnter();
+    setTouchEnabled(true);
+
+    animationID = 0;
+
+    armature = cocos2d::extension::CCArmature::create("testEasing");
+    armature->getAnimation()->playWithIndex(0);
+    armature->setScale(0.8);
+
+    armature->setPosition(ccp(VisibleRect::center().x, VisibleRect::center().y));
+    addChild(armature);
+
+    updateSubTitle();
+}
+void TestEasing::onExit()
+{
+    CCDirector::sharedDirector()->getTouchDispatcher()->removeDelegate(this);
+    ArmatureTestLayer::onExit();
+}
+std::string TestEasing::title()
+{
+    return "Test easing effect";
+}
+std::string TestEasing::subtitle()
+{
+    return "Current easing : ";
+}
+bool TestEasing::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
+{
+    animationID++;
+    animationID = animationID % armature->getAnimation()->getMovementCount();
+    armature->getAnimation()->playWithIndex(animationID);
+
+    updateSubTitle();
+
+    return false;
+}
+void TestEasing::updateSubTitle()
+{
+    std::string str = subtitle() + armature->getAnimation()->getCurrentMovementID();
+    CCLabelTTF *label = (CCLabelTTF *)getChildByTag(10001);
+    label->setString(str.c_str());
+}
+void TestEasing::registerWithTouchDispatcher()
+{
+    CCDirector::sharedDirector()->getTouchDispatcher()->addTargetedDelegate(this, kCCMenuHandlerPriority + 1, true);
+}
+
+
+
+
+void TestChangeAnimationInternal::onEnter()
+{
+    ArmatureTestLayer::onEnter();
+    setTouchEnabled(true);
+
+    cocos2d::extension::CCArmature *armature = NULL;
+    armature = cocos2d::extension::CCArmature::create("Cowboy");
+    armature->getAnimation()->playWithIndex(0);
+    armature->setScale(0.2f);
+
+    armature->setPosition(ccp(VisibleRect::center().x, VisibleRect::center().y));
+    addChild(armature);
+}
+void TestChangeAnimationInternal::onExit()
+{
+    CCDirector::sharedDirector()->getTouchDispatcher()->removeDelegate(this);
+    CCDirector::sharedDirector()->setAnimationInterval(1/60.0f);
+}
+std::string TestChangeAnimationInternal::title()
+{
+    return "Test change animation internal";
+}
+std::string TestChangeAnimationInternal::subtitle()
+{
+    return "Touch to change animation internal";
+}
+
+bool TestChangeAnimationInternal::ccTouchBegan(CCTouch *pTouch, CCEvent *pEvent)
+{
+    if (CCDirector::sharedDirector()->getAnimationInterval() == 1/30.0f)
+    {
+        CCDirector::sharedDirector()->setAnimationInterval(1/60.0f);
+    }
+    else
+    {
+        CCDirector::sharedDirector()->setAnimationInterval(1/30.0f);
+    }
+    return false;
+}
+void TestChangeAnimationInternal::registerWithTouchDispatcher()
+{
+    CCDirector::sharedDirector()->getTouchDispatcher()->addTargetedDelegate(this, kCCMenuHandlerPriority + 1, true);
 }
 
