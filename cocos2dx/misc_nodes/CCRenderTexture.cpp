@@ -96,6 +96,8 @@ CCRenderTexture::~CCRenderTexture()
 void CCRenderTexture::listenToBackground(cocos2d::CCObject *obj)
 {
 #if CC_ENABLE_CACHE_TEXTURE_DATA
+	CCLog("CCRenderTexture::listenToBackground");
+	m_pTexture->saveTexBeforePause();
     CC_SAFE_DELETE(m_pUITextureImage);
     
     // to get the rendered texture data
@@ -124,6 +126,7 @@ void CCRenderTexture::listenToBackground(cocos2d::CCObject *obj)
 void CCRenderTexture::listenToForeground(cocos2d::CCObject *obj)
 {
 #if CC_ENABLE_CACHE_TEXTURE_DATA
+	CCLog("CCRenderTexture::listenToForeground");
     // -- regenerate frame buffer object and attach the texture
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &m_nOldFBO);
     

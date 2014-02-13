@@ -159,7 +159,7 @@ public class Cocos2dxGLSurfaceView extends GLSurfaceView {
 	public void onResume() {
 		super.onResume();
 		
-		this.setRenderMode(RENDERMODE_CONTINUOUSLY);
+		//this.setRenderMode(RENDERMODE_CONTINUOUSLY);
 		
 		this.queueEvent(new Runnable() {
 			@Override
@@ -178,9 +178,9 @@ public class Cocos2dxGLSurfaceView extends GLSurfaceView {
 			}
 		});
 		
-		this.setRenderMode(RENDERMODE_WHEN_DIRTY);
+		//this.setRenderMode(RENDERMODE_WHEN_DIRTY);
 		
-		//super.onPause();
+		super.onPause();
 	}
 
 	@Override

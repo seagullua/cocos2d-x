@@ -267,7 +267,22 @@ public:
     
     bool hasPremultipliedAlpha();
     bool hasMipmaps();
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+    /**
+     * @brief Get texture data and store it
+     */
+    void saveTexBeforePause();
+#endif
 private:
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+    void listenToForeground();
+    /**
+     * @brief We need to store tex parameter to reload texture
+     */
+    ccTexParams m_oTexParameter;
+    void* m_oTextureData;
+#endif
+
     bool initPremultipliedATextureWithImage(CCImage * image, unsigned int pixelsWide, unsigned int pixelsHigh);
     
     // By default PVR images are treated as if they don't have the alpha channel premultiplied

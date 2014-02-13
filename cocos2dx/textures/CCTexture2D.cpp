@@ -46,6 +46,11 @@ THE SOFTWARE.
 #include "shaders/ccGLStateCache.h"
 #include "shaders/CCShaderCache.h"
 
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+    #include "support/CCNotificationCenter.h"
+    #include "CCEventType.h"
+#endif
+
 #if CC_ENABLE_CACHE_TEXTURE_DATA
     #include "CCTextureCache.h"
 #endif
@@ -71,6 +76,9 @@ CCTexture2D::CCTexture2D()
 , m_bHasPremultipliedAlpha(false)
 , m_bHasMipmaps(false)
 , m_pShaderProgram(NULL)
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+, m_oTextureData(NULL)
+#endif
 {
 }
 
@@ -87,6 +95,10 @@ CCTexture2D::~CCTexture2D()
     {
         ccGLDeleteTexture(m_uName);
     }
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+    CCNotificationCenter::sharedNotificationCenter()->removeObserver(this, EVENT_COME_TO_FOREGROUND);
+    delete[] m_oTextureData;
+#endif
 }
 
 CCTexture2DPixelFormat CCTexture2D::getPixelFormat()
@@ -259,6 +271,19 @@ bool CCTexture2D::initWithData(const void *data, CCTexture2DPixelFormat pixelFor
 
     setShaderProgram(CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTexture));
 
+
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+    //We need to reload texture in android
+    //1. Register reload callback
+    CCNotificationCenter::sharedNotificationCenter()->addObserver(this,
+                                                                      callfuncO_selector(CCTexture2D::listenToForeground),
+                                                                      EVENT_COME_TO_FOREGROUND, // this is misspelt
+                                                                      NULL);
+    //2. Store the texture in RAM
+    unsigned int size = pixelsWide*pixelsHigh*bitsPerPixel/8;
+    m_oTextureData = new char[size];
+    memcpy(m_oTextureData, data, size);
+#endif
     return true;
 }
 
@@ -939,6 +964,95 @@ unsigned int CCTexture2D::bitsPerPixelForFormat()
 {
 	return this->bitsPerPixelForFormat(m_ePixelFormat);
 }
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+void CCTexture2D::saveTexBeforePause()
+{
+    CCLog("Texture saved: %d", m_uName);
+    ccGLBindTexture2D(m_uName);
+
+    switch(m_ePixelFormat)
+    {
+    case kCCTexture2DPixelFormat_RGBA8888:
+        glGetTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_oTextureData);
+        break;
+    case kCCTexture2DPixelFormat_RGB888:
+        glGetTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_RGB, GL_UNSIGNED_BYTE, m_oTextureData);
+        break;
+    case kCCTexture2DPixelFormat_RGBA4444:
+        glGetTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, m_oTextureData);
+        break;
+    case kCCTexture2DPixelFormat_RGB5A1:
+        glGetTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, m_oTextureData);
+        break;
+    case kCCTexture2DPixelFormat_RGB565:
+        glGetTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, m_oTextureData);
+        break;
+    case kCCTexture2DPixelFormat_AI88:
+        glGetTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, m_oTextureData);
+        break;
+    case kCCTexture2DPixelFormat_A8:
+        glGetTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_ALPHA, GL_UNSIGNED_BYTE, m_oTextureData);
+        break;
+    case kCCTexture2DPixelFormat_I8:
+        glGetTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, m_oTextureData);
+        break;
+    default:
+        CCAssert(0, "NSInternalInconsistencyException");
+
+    }
+}
+
+void CCTexture2D::listenToForeground()
+{
+    CCLog("Texture: %d", m_uName);
+    if(m_oTextureData)
+    {
+        CCLog("Texture reloaded: %d", m_uName);
+        //We need to reload this texture
+        if(glIsTexture(m_uName) == false)
+            glGenTextures(1, &m_uName);
 
 
+        ccGLBindTexture2D(m_uName);
+
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+
+        // Specify OpenGL texture image
+
+        switch(m_ePixelFormat)
+        {
+        case kCCTexture2DPixelFormat_RGBA8888:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_oTextureData);
+            break;
+        case kCCTexture2DPixelFormat_RGB888:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_RGB, GL_UNSIGNED_BYTE, m_oTextureData);
+            break;
+        case kCCTexture2DPixelFormat_RGBA4444:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, m_oTextureData);
+            break;
+        case kCCTexture2DPixelFormat_RGB5A1:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, m_oTextureData);
+            break;
+        case kCCTexture2DPixelFormat_RGB565:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, m_oTextureData);
+            break;
+        case kCCTexture2DPixelFormat_AI88:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, m_oTextureData);
+            break;
+        case kCCTexture2DPixelFormat_A8:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_ALPHA, GL_UNSIGNED_BYTE, m_oTextureData);
+            break;
+        case kCCTexture2DPixelFormat_I8:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, (GLsizei)m_uPixelsWide, (GLsizei)m_uPixelsHigh, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, m_oTextureData);
+            break;
+        default:
+            CCAssert(0, "NSInternalInconsistencyException");
+
+        }
+    }
+}
+#endif
 NS_CC_END
