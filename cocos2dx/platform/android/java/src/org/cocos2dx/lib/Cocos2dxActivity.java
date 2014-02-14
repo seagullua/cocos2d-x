@@ -33,6 +33,7 @@ import android.os.Message;
 import android.view.ViewGroup;
 import android.util.Log;
 import android.widget.FrameLayout;
+import android.content.res.Configuration;
 
 public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelperListener {
 	// ===========================================================
@@ -91,7 +92,21 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
 		Cocos2dxHelper.onPause();
 		this.mGLSurfaceView.onPause();
 	}
+	
+	@Override
+	public void onConfigurationChanged (Configuration newConfig)
+	{
+		int current_orientation = getResources().getConfiguration().orientation;
+		//Log.d("act", "Configuration changed");
+		if(newConfig.orientation != current_orientation)
+		{
+			//Log.d("act", "Configuration restored");
+			newConfig.orientation = current_orientation;
+		}
+		super.onConfigurationChanged(newConfig);
 
+	}
+	
 	@Override
 	public void showDialog(final String pTitle, final String pMessage) {
 		Message msg = new Message();
