@@ -1370,6 +1370,11 @@ public:
      *   removes a component by its name      
      */
     virtual bool removeComponent(const char *pName);
+
+    /** 
+     *   removes a component by its pointer      
+     */
+    virtual bool removeComponent(CCComponent *pComponent);
     
     /**
      *   removes all components
@@ -1461,7 +1466,9 @@ protected:
 
 };
 
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS) || (CC_TARGET_PLATFORM == CC_PLATFORM_MAC)
 //#pragma mark - CCNodeRGBA
+#endif
 
 /** CCNodeRGBA is a subclass of CCNode that implements the CCRGBAProtocol protocol.
  
