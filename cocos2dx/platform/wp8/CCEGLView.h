@@ -133,7 +133,8 @@ public:
     @brief    get the shared main open gl window
     */
 	static CCEGLView* sharedOpenGLView();
-
+	void CCEGLView::setDesignResolutionSize(float width, float height, ResolutionPolicy resolutionPolicy);
+	CCPoint CCEGLView::getVisibleOrigin() const;
 protected:
 
 private:

@@ -59,7 +59,7 @@ using namespace PhoneDirect3DXamlAppComponent;
 NS_CC_BEGIN
 
 static CCEGLView* s_pEglView = NULL;
-
+static CCPoint m_dummy_origin = CCPointZero;
 WP8Window::WP8Window(CoreWindow^ window)
 {
 	m_window = window;
@@ -286,6 +286,67 @@ void CCEGLView::OnPointerReleased(PointerEventArgs^ args)
 void CCEGLView::resize(int width, int height)
 {
 
+}
+void CCEGLView::setDesignResolutionSize(float width, float height, ResolutionPolicy resolutionPolicy)
+{
+    CCAssert(resolutionPolicy != kResolutionUnKnown, "should set resolutionPolicy");
+    
+    if (width == 0.0f || height == 0.0f)
+    {
+        return;
+    }
+
+    m_obDesignResolutionSize.setSize(width, height);
+    
+    m_fScaleX = (float)m_obScreenSize.width / m_obDesignResolutionSize.width;
+    m_fScaleY = (float)m_obScreenSize.height / m_obDesignResolutionSize.height;
+    
+    if (resolutionPolicy == kResolutionNoBorder)
+    {
+        m_fScaleX = m_fScaleY = MAX(m_fScaleX, m_fScaleY);
+    }
+    
+    if (resolutionPolicy == kResolutionShowAll)
+    {
+        m_fScaleX = m_fScaleY = MIN(m_fScaleX, m_fScaleY);
+    }
+
+    if ( resolutionPolicy == kResolutionFixedHeight) {
+    	m_fScaleX = m_fScaleY;
+    	m_obDesignResolutionSize.width = ceilf(m_obScreenSize.width/m_fScaleX);
+    }
+
+    if ( resolutionPolicy == kResolutionFixedWidth) {
+    	m_fScaleY = m_fScaleX;
+    	m_obDesignResolutionSize.height = ceilf(m_obScreenSize.height/m_fScaleY);
+    }
+
+    // calculate the rect of viewport    
+    float viewPortW = m_obDesignResolutionSize.width * m_fScaleX;
+    float viewPortH = m_obDesignResolutionSize.height * m_fScaleY;
+
+	CCPoint origin((m_obScreenSize.width - viewPortW) / 2,
+		(m_obScreenSize.height - viewPortH) / 2);
+
+	//There may be problems with negative
+	if(resolutionPolicy == kResolutionNoBorder)
+	{
+		m_dummy_origin = origin;
+		origin = CCPointZero;
+	}
+
+	m_obViewPortRect.setRect(origin.x, origin.y, viewPortW, viewPortH);
+    
+    m_eResolutionPolicy = resolutionPolicy;
+
+	// reset director's member variables to fit visible rect
+    CCDirector::sharedDirector()->m_obWinSizeInPoints = getDesignResolutionSize();
+    CCDirector::sharedDirector()->createStatsLabel();
+    CCDirector::sharedDirector()->setGLDefaultValues();
+}
+CCPoint CCEGLView::getVisibleOrigin() const
+{
+    return CCPointZero;
 }
 
 void CCEGLView::setFrameZoomFactor(float fZoomFactor)
@@ -550,7 +611,8 @@ CCPoint CCEGLView::TransformToOrientation(Point p)
 
 CCPoint CCEGLView::GetCCPoint(PointerEventArgs^ args) {
 
-	return TransformToOrientation(args->CurrentPoint->Position);
+	CCPoint touch = TransformToOrientation(args->CurrentPoint->Position);
+	return touch - m_dummy_origin*2;
 
 }
 

@@ -441,6 +441,7 @@ protected:
     
     // CCEGLViewProtocol will recreate stats labels to fit visible rect
     friend class CCEGLViewProtocol;
+	friend class CCEGLView;
 };
 
 /** 
