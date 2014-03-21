@@ -194,6 +194,7 @@ bool CCEGLView::isOpenGLReady()
 void CCEGLView::end()
 {
 	m_windowClosed = true;
+	m_delegate->Invoke(Cocos2dEvent::TerminateApp);
 }
 
 void CCEGLView::OnOrientationChanged()
