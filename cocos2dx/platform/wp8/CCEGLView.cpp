@@ -613,7 +613,7 @@ CCPoint CCEGLView::TransformToOrientation(Point p)
 CCPoint CCEGLView::GetCCPoint(PointerEventArgs^ args) {
 
 	CCPoint touch = TransformToOrientation(args->CurrentPoint->Position);
-	return touch - m_dummy_origin*2;
+	return touch;// - m_dummy_origin*2;
 
 }
 
