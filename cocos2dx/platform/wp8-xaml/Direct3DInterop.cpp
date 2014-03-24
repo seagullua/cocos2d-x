@@ -38,11 +38,12 @@ using namespace PhoneDirect3DXamlAppComponent;
 
 namespace PhoneDirect3DXamlAppComponent
 {
-
+Direct3DInterop^ Direct3DInterop::m_obj = nullptr;
 Direct3DInterop::Direct3DInterop() 
     : mCurrentOrientation(DisplayOrientations::Portrait), m_delegate(nullptr)
 {
     m_renderer = ref new Cocos2dRenderer();
+	m_obj = this;
 }
 
 
@@ -65,7 +66,24 @@ void Direct3DInterop::SetManipulationHost(DrawingSurfaceManipulationHost^ manipu
     manipulationHost->PointerReleased +=
         ref new TypedEventHandler<DrawingSurfaceManipulationHost^, PointerEventArgs^>(this, &Direct3DInterop::OnPointerReleased);
 }
-
+void Direct3DInterop::onPause()
+{
+	if(m_obj != nullptr)
+	{
+		std::lock_guard<std::mutex> guard(m_obj->mMutex);
+		std::shared_ptr<PauseEvent> e(new PauseEvent());
+		m_obj->mInputEvents.push(e);
+	}
+}
+void Direct3DInterop::onResume()
+{
+	if(m_obj != nullptr)
+	{
+		std::lock_guard<std::mutex> guard(m_obj->mMutex);
+		std::shared_ptr<ResumeEvent> e(new ResumeEvent());
+		m_obj->mInputEvents.push(e);
+	}
+}
 void Direct3DInterop::UpdateForWindowSizeChange(float width, float height)
 {
     m_renderer->UpdateForWindowSizeChange(width, height);

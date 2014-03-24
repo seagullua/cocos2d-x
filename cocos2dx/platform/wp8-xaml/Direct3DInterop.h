@@ -63,7 +63,8 @@ public:
     void SetCocos2dMessageBoxDelegate(Cocos2dMessageBoxDelegate ^ delegate);
     void SetCocos2dEditBoxDelegate(Cocos2dEditBoxDelegate ^ delegate);
 
-
+	static void onPause();
+	static void onResume();
 protected:
     // Event Handlers
     void OnPointerPressed(Windows::Phone::Input::Interop::DrawingSurfaceManipulationHost^ sender, Windows::UI::Core::PointerEventArgs^ args);
@@ -89,6 +90,7 @@ private:
     Cocos2dEventDelegate^ m_delegate;
     Cocos2dMessageBoxDelegate^ m_messageBoxDelegate;
     Cocos2dEditBoxDelegate^ m_editBoxDelegate;
+	static Direct3DInterop^ m_obj;
 
 };
 

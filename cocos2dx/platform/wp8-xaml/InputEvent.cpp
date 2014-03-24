@@ -25,7 +25,7 @@ THE SOFTWARE.
 
 #include "InputEvent.h"
 #include "Cocos2dRenderer.h"
-
+#include "cocos2d.h"
 namespace PhoneDirect3DXamlAppComponent
 {
 
@@ -85,6 +85,17 @@ BackButtonEvent::BackButtonEvent()
 void BackButtonEvent::execute(Cocos2dRenderer ^ renderer)
 {
     renderer->OnBackKeyPress();
+}
+
+void PauseEvent::execute(Cocos2dRenderer ^ )
+{
+	cocos2d::CCApplication::sharedApplication()->applicationDidEnterBackground();
+}
+
+void ResumeEvent::execute(Cocos2dRenderer ^)
+{
+	if(cocos2d::CCDirector::sharedDirector()->getOpenGLView())
+		cocos2d::CCApplication::sharedApplication()->applicationWillEnterForeground();
 }
 
 

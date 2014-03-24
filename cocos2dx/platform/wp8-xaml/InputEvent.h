@@ -89,6 +89,17 @@ public:
     virtual void execute(Cocos2dRenderer ^ renderer);
 };
 
+class PauseEvent : public InputEvent
+{
+public:
+	void execute(Cocos2dRenderer ^ renderer);
+};
+
+class ResumeEvent : public InputEvent
+{
+public:
+	void execute(Cocos2dRenderer ^ renderer);
+};
 
 }
 
