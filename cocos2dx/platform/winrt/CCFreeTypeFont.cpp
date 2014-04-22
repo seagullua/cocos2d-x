@@ -39,11 +39,14 @@ NS_CC_BEGIN
 static map<std::string, FontBufferInfo> s_fontsNames;
 static FT_Library s_FreeTypeLibrary = nullptr;
 
+FT_Face CCFreeTypeFont::m_face_fallback = nullptr;
+
 
 CCFreeTypeFont::CCFreeTypeFont() :
     m_space(" ")
 {
 	m_face = nullptr;
+	
     CCSize size = CCDirector::sharedDirector()->getWinSizeInPixels();
     m_windowWidth = (int)size.width;
 }
@@ -130,6 +133,33 @@ bool CCFreeTypeFont::initWithString(
 
     if(!error)
 	    error = FT_Set_Char_Size(m_face,nSize<<6,nSize<<6,72,72);
+
+	if(!m_face_fallback)
+	{
+		FT_Error error = 0;
+		unsigned char* pBufferFallback = nullptr;
+		unsigned long fall_back_size = 0;
+		pBufferFallback = loadFont("Arial", &fall_back_size);
+
+		if(!error)
+		{
+			error = FT_New_Memory_Face(s_FreeTypeLibrary, pBufferFallback, fall_back_size, 0, &m_face_fallback);
+		}
+
+		if(!error)
+		{
+			error = FT_Select_Charmap(m_face_fallback, FT_ENCODING_UNICODE);
+		}
+
+
+		if(!error)
+			error = FT_Set_Char_Size(m_face_fallback,nSize<<6,nSize<<6,72,72);
+
+		//delete[] pBufferFallback;
+	}
+
+	if(m_face_fallback)
+		FT_Set_Char_Size(m_face_fallback,nSize<<6,nSize<<6,72,72);
 
     if(!error)
 	    error = initGlyphs(pText);
@@ -443,12 +473,23 @@ FT_Error CCFreeTypeFont::initWordGlyphs(std::vector<TGlyph>& glyphs, const std::
 
 		/* convert character code to glyph index */
         FT_ULong c = pwszBuffer[n];
-		glyph_index = FT_Get_Char_Index(m_face, c);
 
- 		if (useKerning && previous && glyph_index)
+		FT_Face face = m_face;
+
+		glyph_index = FT_Get_Char_Index(face, c);
+
+		if(glyph_index == 0 && m_face_fallback)
+		{
+			face = m_face_fallback;
+			glyph_index = FT_Get_Char_Index(face, c);
+		}
+
+		slot = face->glyph;
+		
+		if (useKerning && previous && glyph_index && face != m_face_fallback)
 		{
 			FT_Vector  delta;
-			FT_Get_Kerning(m_face, previous, glyph_index,
+			FT_Get_Kerning(face, previous, glyph_index,
 							FT_KERNING_DEFAULT, &delta);
 			pen.x += delta.x >> 6;
 		}
@@ -458,12 +499,12 @@ FT_Error CCFreeTypeFont::initWordGlyphs(std::vector<TGlyph>& glyphs, const std::
 		glyph->index = glyph_index;
 
 		/* load glyph image into the slot without rendering */
-		error = FT_Load_Glyph(m_face, glyph_index, FT_LOAD_DEFAULT);
+		error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
 		if (error)
 			continue;  /* ignore errors, jump to next glyph */
 
 		/* extract glyph image and store it in our table */
-		error = FT_Get_Glyph(m_face->glyph, &glyph->image);
+		error = FT_Get_Glyph(face->glyph, &glyph->image);
 		if (error)
 			continue;  /* ignore errors, jump to next glyph */
 

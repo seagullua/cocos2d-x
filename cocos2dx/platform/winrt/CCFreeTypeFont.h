@@ -120,6 +120,7 @@ private:
 	std::string		m_text;
 	std::string		m_fontName;
 	FT_Face			m_face;
+	static FT_Face			m_face_fallback;
 	std::vector<FTLineInfo*> m_lines;
 
     int             m_inWidth;      // requested width of text box
