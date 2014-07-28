@@ -139,7 +139,12 @@ bool CCFreeTypeFont::initWithString(
 		FT_Error error = 0;
 		unsigned char* pBufferFallback = nullptr;
 		unsigned long fall_back_size = 0;
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WP8)
 		pBufferFallback = loadFont("Arial", &fall_back_size);
+#else
+		pBufferFallback = loadSystemFont("Arial", &fall_back_size);
+#endif
+		
 
 		if(!error)
 		{

@@ -87,7 +87,7 @@ std::string CCUnicodeToUtf8(const wchar_t* pwszStr)
 
 std::string PlatformStringToString(Platform::String^ s) {
 	std::wstring t = std::wstring(s->Data());
-	return std::string(t.begin(),t.end());
+	return CCUnicodeToUtf8(t.c_str());
 }
 
 // Method to convert a length in device-independent pixels (DIPs) to a length in physical pixels.
