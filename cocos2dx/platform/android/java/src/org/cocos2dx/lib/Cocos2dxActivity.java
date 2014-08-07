@@ -34,10 +34,6 @@ import android.view.ViewGroup;
 import android.util.Log;
 import android.widget.FrameLayout;
 import android.content.res.Configuration;
-import android.widget.Toast;
-import android.content.pm.ActivityInfo;
-import android.view.OrientationEventListener;
-import android.hardware.SensorManager;
 
 public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelperListener {
 	// ===========================================================
@@ -71,122 +67,8 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
     	this.init();
 
 		Cocos2dxHelper.init(this, this);
-		
-		orientationListener = new OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
-			public void onOrientationChanged(int orientation) {
-				if(_is_flip_enabled) {
-					handleOrientationChange(orientation);
-				}
-			}
-		};
 	}
-	OrientationEventListener orientationListener = null;
-	
-	static final int LANDSCAPE = 1;
-	static final int LANDSCAPE_REVERSED = 2;
-	static final int PORTRAIT = 3;
-	static final int PORTRAIT_REVERSED = 4;
-	
-	int _last_orientation = LANDSCAPE;
-	//int _last_orientation_repeated = 0;
-	
-	boolean _is_running = false;
-	boolean _is_default_landscape = true;
-	boolean _is_flip_enabled = false; 
-	
-	void enableOrientationListener()
-	{
-		if(_is_flip_enabled && orientationListener != null && !_is_running)
-		{
-			_is_running = true;
-			orientationListener.enable();
-		}
-	}
-	
-	void disableOrientationListener()
-	{
-		if(_is_flip_enabled && orientationListener != null && _is_running)
-		{
-			_is_running = false;
-			orientationListener.disable();
-		}
-	}
-	
-	int getCurrentOrientation(int angle)
-	{
-		if(angle >= 0+45 && angle <= 90 + 45)
-		{
-			return PORTRAIT;
-		}
-		else if(angle >= 90+45 && angle <= 180 + 45)
-		{
-			return LANDSCAPE_REVERSED;
-		}
-		else if(angle >= 180+45 && angle <= 270 +45)
-		{
-			return PORTRAIT_REVERSED;
-		}
-		return LANDSCAPE;
-	}
-	
-	void handleOrientationChange(int ori)
-	{
-		//int rotate_after = 1;
-		int orientation = getCurrentOrientation(ori);
-		if(_last_orientation != orientation)
-		{
-			_last_orientation = orientation;
-			
-			int rotate_to = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
-			boolean use_landscape = true;
-			
-			//Perform rotation
-			if(_is_default_landscape)
-			{
-				//For landscaped
-			}
-			else
-			{
-				rotate_to = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
-				//For portrait
-				if(orientation == PORTRAIT || orientation == PORTRAIT_REVERSED)
-				{
-					use_landscape = false;
-				}
-				//else if(orientation == PORTRAIT_REVERSED)
-				//{
-				//	rotate_to = ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT ;
-				//	use_landscape = false;
-				//}
-				else if(orientation == LANDSCAPE || orientation == LANDSCAPE_REVERSED)
-				{
-					use_landscape = true;
-				}
-				//else if(orientation == LANDSCAPE_REVERSED)
-				//{
-				//	rotate_to = ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT;
-				//	use_landscape = true;
-				//}
-			}
-			
-			setRequestedOrientation(rotate_to);
-			orientationChanged(use_landscape);
-		}
-		//Log.d("ORIENT", "Value: "+getCurrentOrientation(orientation));
-	}
-	
-	public void enableOrientationHandler(boolean default_is_landscape)
-	{
-		Log.d("ORIENT", "default enabled");
-		_is_flip_enabled = true;
-		_is_default_landscape = default_is_landscape;
-		
-		enableOrientationListener();
-		//
-	}
-	
-	private native void orientationChanged(boolean is_landscape);
-	
+
 	// ===========================================================
 	// Getter & Setter
 	// ===========================================================
@@ -201,8 +83,6 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
 
 		Cocos2dxHelper.onResume();
 		this.mGLSurfaceView.onResume();
-		
-		enableOrientationListener();
 	}
 
 	@Override
@@ -211,21 +91,18 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
 
 		Cocos2dxHelper.onPause();
 		this.mGLSurfaceView.onPause();
-		
-		disableOrientationListener();
 	}
 	
 	@Override
 	public void onConfigurationChanged (Configuration newConfig)
 	{
-		
 		int current_orientation = getResources().getConfiguration().orientation;
-		
+		//Log.d("act", "Configuration changed");
 		if(newConfig.orientation != current_orientation)
 		{
+			//Log.d("act", "Configuration restored");
 			newConfig.orientation = current_orientation;
 		}
-		
 		super.onConfigurationChanged(newConfig);
 
 	}
