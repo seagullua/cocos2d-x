@@ -280,6 +280,7 @@
 				HEADER_SEARCH_PATHS = "\"$(SDKROOT)/usr/include/libxml2\"";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.1.1;
 				LIBRARY_SEARCH_PATHS = "";
+				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = "-ObjC";
 				PRIVATE_HEADERS_FOLDER_PATH = /usr/local/include;
 				PRODUCT_NAME = CocosDenshion;
@@ -308,6 +309,7 @@
 				HEADER_SEARCH_PATHS = "\"$(SDKROOT)/usr/include/libxml2\"";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.1.1;
 				LIBRARY_SEARCH_PATHS = "";
+				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = "-ObjC";
 				PRIVATE_HEADERS_FOLDER_PATH = /usr/local/include;
 				PRODUCT_NAME = CocosDenshion;
