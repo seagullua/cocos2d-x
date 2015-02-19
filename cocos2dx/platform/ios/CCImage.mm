@@ -163,29 +163,26 @@ static bool _initWithData(void * pBuffer, int length, tImageInfo *pImageinfo)
     
     return ret;
 }
-
+static bool s_isIOS7OrHigher = false;
 static CGSize _calculateStringSize(NSString *str, id font, CGSize *constrainSize)
 {
-    NSArray *listItems = [str componentsSeparatedByString: @"\n"];
-    CGSize dim = CGSizeZero;
     CGSize textRect = CGSizeZero;
     textRect.width = constrainSize->width > 0 ? constrainSize->width
-                                              : 0x7fffffff;
+    : 0x7fffffff;
     textRect.height = constrainSize->height > 0 ? constrainSize->height
-                                              : 0x7fffffff;
+    : 0x7fffffff;
     
-    
-    for (NSString *s in listItems)
-    {
-        CGSize tmp = [s sizeWithFont:font constrainedToSize:textRect];
-        
-        if (tmp.width > dim.width)
-        {
-           dim.width = tmp.width; 
-        }
-        
-        dim.height += tmp.height;
+    CGSize dim;
+    if(s_isIOS7OrHigher){
+        NSDictionary *attibutes = @{NSFontAttributeName:font};
+        dim = [str boundingRectWithSize:textRect options:(NSStringDrawingOptions)(NSStringDrawingUsesLineFragmentOrigin) attributes:attibutes context:nil].size;
     }
+    else {
+        dim = [str sizeWithFont:font constrainedToSize:textRect];
+    }
+    
+    dim.width = ceilf(dim.width);
+    dim.height = ceilf(dim.height);
     
     return dim;
 }
@@ -195,8 +192,22 @@ static CGSize _calculateStringSize(NSString *str, id font, CGSize *constrainSize
 #define ALIGN_CENTER 3
 #define ALIGN_BOTTOM 2
 
+
+static inline void lazyCheckIOS7()
+{
+    static bool isInited = false;
+    if (!isInited)
+    {
+        s_isIOS7OrHigher = [[[UIDevice currentDevice] systemVersion] compare:@"7.0" options:NSNumericSearch] != NSOrderedAscending;
+        isInited = true;
+    }
+}
+
 static bool _initWithString(const char * pText, cocos2d::CCImage::ETextAlign eAlign, const char * pFontName, int nSize, tImageInfo* pInfo)
 {
+    lazyCheckIOS7();
+    
+    
     bool bRet = false;
     do 
     {
@@ -389,9 +400,31 @@ static bool _initWithString(const char * pText, cocos2d::CCImage::ETextAlign eAl
         }
         
         
-        // actually draw the text in the context
-		// XXX: ios7 casting
-        [str drawInRect:CGRectMake(textOriginX, textOrigingY, textWidth, textHeight) withFont:font lineBreakMode:NSLineBreakByWordWrapping alignment:(NSTextAlignment)align];
+        if(s_isIOS7OrHigher)
+        {
+            NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+            paragraphStyle.alignment = (NSTextAlignment)align;
+            paragraphStyle.lineBreakMode = NSLineBreakByWordWrapping;
+            [str drawInRect:CGRectMake(textOriginX, textOrigingY, textWidth, textHeight) withAttributes:@{
+                                                  NSFontAttributeName: font,
+                                                  NSForegroundColorAttributeName:[UIColor colorWithRed:pInfo->tintColorR
+                                                                                                 green:pInfo->tintColorG
+                                                                                                  blue:pInfo->tintColorB
+                                                                                                 alpha:1],
+                                                  NSParagraphStyleAttributeName:paragraphStyle,
+                                                  
+                                                  }
+             ];
+            [paragraphStyle release];
+        }
+        else
+        {
+            // actually draw the text in the context
+            // XXX: ios7 casting
+            [str drawInRect:CGRectMake(textOriginX, textOrigingY, textWidth, textHeight) withFont:font lineBreakMode:NSLineBreakByWordWrapping alignment:(NSTextAlignment)align];
+        }
+        
+        
         
         // pop the context
         UIGraphicsPopContext();
