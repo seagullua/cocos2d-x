@@ -4,7 +4,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := cocosdenshion_static
 
 LOCAL_MODULE_FILENAME := libcocosdenshion
-
+LOCAL_CPPFLAGS += -std=c++11
 LOCAL_SRC_FILES := SimpleAudioEngine.cpp \
                    jni/SimpleAudioEngineJni.cpp \
                    opensl/OpenSLEngine.cpp \
