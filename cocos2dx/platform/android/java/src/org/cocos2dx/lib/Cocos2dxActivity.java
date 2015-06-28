@@ -152,7 +152,10 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
 
         // Cocos2dxGLSurfaceView
         this.mGLSurfaceView = this.onCreateView();
-
+		
+		//Support clipping node
+		this.mGLSurfaceView.setEGLConfigChooser(5, 6, 5, 0, 16, 8);
+		
         // ...add to FrameLayout
         framelayout.addView(this.mGLSurfaceView);
 
